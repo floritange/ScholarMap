@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScholarMap - Academic Relationship Graph</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root {
+  --bg:#E8E6DC;--bg-card:#F5F4ED;--bg-dark:#1A1A19;
+  --text:#141413;--text-secondary:#5C5C58;--text-muted:#9A998E;
+  --accent:#D97757;--accent-hover:#C5664A;
+  --green:#4A9E6E;--yellow:#C89418;--red:#C44D3E;--blue:#4A7EC4;--purple:#8B6CC4;
+  --border:rgba(20,20,19,0.12);--border-strong:rgba(20,20,19,0.22);
+  --radius:6px;
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'Inter',-apple-system,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(217,119,87,0.3)}
+h1{font-family:var(--serif);font-weight:400;font-size:1.5rem}
+h2{font-family:var(--serif);font-weight:400;font-size:1.4rem;margin-bottom:0.75rem}
+h3{font-family:var(--sans);font-weight:600;font-size:1rem}
+h4{font-family:var(--sans);font-weight:600;font-size:0.875rem;margin-bottom:0.4rem}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+.tag{display:inline-block;padding:0.15rem 0.5rem;border-radius:3px;font-size:0.75rem;font-weight:600;margin-right:0.3rem}
+.tag-accent{background:rgba(217,119,87,0.15);color:var(--accent)}
+.tag-blue{background:rgba(74,126,196,0.15);color:var(--blue)}
+.tag-green{background:rgba(74,158,110,0.15);color:var(--green)}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{display:flex;align-items:center;gap:1rem;padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);flex-shrink:0}
+header .logo{font-family:var(--serif);font-size:1.25rem;white-space:nowrap}
+header .logo span{color:var(--accent)}
+#search{flex:1;max-width:300px;padding:0.4rem 0.75rem;border:1px solid var(--border-strong);border-radius:100px;font-family:var(--sans);font-size:0.875rem;background:var(--bg-card);outline:none}
+#search:focus{border-color:var(--accent)}
+.venue-chips{display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center}
+.chip{padding:0.3rem 0.75rem;border:1px solid var(--border-strong);border-radius:100px;font-size:0.8rem;font-weight:500;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.15s}
+.chip:hover{border-color:var(--text);color:var(--text)}
+.chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.main{display:flex;flex:1;overflow:hidden}
+#graph-container{flex:1;position:relative;overflow:hidden}
+#graph-container svg{width:100%;height:100%;display:block}
+.graph-hint{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);font-size:0.75rem;color:var(--text-muted);background:rgba(245,244,237,0.9);padding:0.3rem 0.8rem;border-radius:100px;pointer-events:none;opacity:1;transition:opacity 1s}
+.graph-hint.hidden{opacity:0}
+#panel{width:340px;flex-shrink:0;border-left:1px solid var(--border);padding:1.25rem;overflow-y:auto;background:var(--bg)}
+#panel .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:1rem}
+#panel .stat{text-align:center;padding:0.5rem;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border)}
+#panel .stat .num{font-family:var(--serif);font-size:1.75rem;color:var(--accent);line-height:1.1}
+#panel .stat .label{font-size:0.7rem;color:var(--text-muted);margin-top:0.15rem}
+.filter-scope{font-size:0.75rem;color:var(--text-muted);margin-bottom:0.75rem;padding:0.3rem 0.5rem;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border)}
+.list-item{padding:0.4rem 0.5rem;border-radius:var(--radius);cursor:pointer;font-size:0.85rem;transition:background 0.1s;display:flex;justify-content:space-between;align-items:center}
+.list-item:hover{background:rgba(217,119,87,0.08)}
+.list-item .count{font-family:var(--mono);font-size:0.75rem;color:var(--text-muted)}
+.clickable-stat{cursor:pointer;border-radius:var(--radius);transition:background 0.15s}
+.clickable-stat:hover{background:rgba(217,119,87,0.08)}
+.clickable-stat .label{color:var(--accent)}
+.rank-list .list-item{padding:0.35rem 0.5rem;justify-content:flex-start;gap:0.4rem}
+.rank-list .rank-num{color:var(--text-muted);font-family:var(--mono);font-size:0.75rem;min-width:2rem;flex-shrink:0}
+.rank-list .list-item .count{margin-left:auto}
+.paper-item{padding:0.5rem 0;border-bottom:1px solid var(--border);font-size:0.8rem}
+.paper-title{cursor:pointer;color:var(--text);font-weight:500;line-height:1.4;display:flex;align-items:baseline;gap:0.4rem}
+.paper-title:hover{color:var(--accent)}
+.paper-title .arrow{font-size:0.65rem;color:var(--text-muted);transition:transform 0.2s;flex-shrink:0}
+.paper-title .arrow.open{transform:rotate(90deg)}
+.paper-title .pos-tag{font-size:0.65rem;padding:0.1rem 0.35rem;border-radius:3px;background:rgba(74,126,196,0.12);color:var(--blue);font-weight:600;flex-shrink:0;white-space:nowrap}
+.paper-title .pos-tag.last{background:rgba(217,119,87,0.12);color:var(--accent)}
+.venue-tag{font-size:0.6rem;padding:0.1rem 0.3rem;border-radius:3px;background:rgba(74,158,110,0.12);color:var(--green);font-weight:600;flex-shrink:0;white-space:nowrap;margin-right:0.1rem}
+.paper-authors{font-size:0.75rem;color:var(--text-muted);line-height:1.5;margin-top:0.2rem}
+.paper-author{color:var(--accent);cursor:pointer}
+.paper-author:hover{text-decoration:underline}
+.paper-author-plain{color:var(--text-muted)}
+.paper-abstract{max-height:0;overflow:hidden;transition:max-height 0.3s ease;font-size:0.78rem;color:var(--text-secondary);line-height:1.5}
+.paper-abstract.open{max-height:500px}
+.section-label{font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin:1rem 0 0.4rem}
+footer{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 1.25rem;border-top:1px solid var(--border);font-size:0.75rem;color:var(--text-muted);flex-shrink:0}
+footer button{font-family:var(--sans);font-size:0.75rem;padding:0.3rem 0.75rem;border:1px solid var(--border-strong);border-radius:var(--radius);background:transparent;color:var(--text-secondary);cursor:pointer}
+footer button:hover{background:rgba(20,20,19,0.04)}
+.tooltip{position:fixed;padding:0.4rem 0.7rem;background:var(--bg-dark);color:#F5F4ED;border-radius:var(--radius);font-size:0.75rem;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:100;white-space:nowrap}
+.node-group{cursor:pointer}
+.node-circle{transition:opacity 0.3s,filter 0.3s}
+.node-label{font-family:var(--sans);pointer-events:none;fill:var(--text);font-size:10px;text-anchor:middle}
+.edge-line{stroke:rgba(20,20,19,0.15);fill:none}
+.edge-line.highlighted{stroke:var(--accent);opacity:1!important}
+.node-circle.dimmed,.edge-line.dimmed{opacity:0.08}
+.node-circle.glowing{filter:drop-shadow(0 0 6px var(--accent))}
+.tag-secondary{background:rgba(20,20,19,0.06)!important;color:var(--text-secondary)!important}
+.panel-nav{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem}
+.back-btn{font-size:0.8rem;color:var(--accent);cursor:pointer;display:inline-block}
+.back-btn:hover{text-decoration:underline}
+.home-btn{font-size:0.8rem;color:var(--text-muted);cursor:pointer;margin-left:auto}
+.home-btn:hover{color:var(--accent)}
+.empty-state{text-align:center;padding:2rem 1rem;color:var(--text-muted);font-size:0.85rem}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">Know<span>People</span></div>
+    <input id="search" type="text" placeholder="Search names, papers, abstracts...">
+    <div id="venue-chips" class="venue-chips"></div>
+  </header>
+  <div class="main">
+    <div id="graph-container">
+      <div class="graph-hint" id="graph-hint">Click org to expand members · Click blank to collapse · Scroll to zoom</div>
+    </div>
+    <div id="panel"><div class="empty-state">Loading graph data...</div></div>
+  </div>
+  <footer>
+    <span id="footer-info">Loading...</span>
+  </footer>
+</div>
+<div class="tooltip" id="tooltip"></div>
+<script>
+// === Global state ===
+let DATA = null;
+let nodeMap = {};   // id -> node object
+let paperMap = {};  // title -> paper object
+let simulation = null;
+let svg, gMain, gLinks, gNodes, zoom;
+let expandedOrg = null;
+let selectedPerson = null;
+let activeVenues = new Set();
+let searchQuery = "";
+let orgThreshold = 3;
+let currentRankList = null; // "orgs" | "persons" | null
+let panelHistory = []; // stack of {type, data} for back navigation
+const COLORS = [
+  "#4E79A7","#F28E2B","#E15759","#76B7B2","#59A14F",
+  "#EDC948","#B07AA1","#FF9DA7","#9C755F","#BAB0AC",
+  "#D37295","#1B9E77","#D95F02","#7570B3","#E7298A",
+  "#66A61E","#E6AB02","#A6761D","#8DD3C7","#FB8072",
+  "#80B1D3","#B3DE69","#FCCDE5","#386CB0","#BF5B17",
+];
+
+// === Helpers ===
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function jsEsc(s) { return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function getRadius(d) {
+  if (d.type === "org") return Math.max(10, Math.sqrt(d.metrics.paper_count) * 8);
+  return Math.max(4, Math.sqrt(d.metrics.paper_count) * 5);
+}
+function getPersonOrgs(personName) {
+  // return all orgs this person belongs to (from org node members lists)
+  const orgs = [];
+  DATA.nodes.forEach(n => {
+    if (n.type === "org" && n.members && n.members.includes(personName) && n.name !== "Unknown") orgs.push(n.name);
+  });
+  // if no orgs found, fallback to primary
+  if (!orgs.length) {
+    const pNode = nodeMap["person:" + personName];
+    if (pNode && pNode.org && pNode.org !== "Unknown") orgs.push(pNode.org);
+  }
+  return orgs;
+}
+function getOrgMemberIds(orgName) {
+  // prefer org node's members list (includes dual/triple affiliation members from pipeline)
+  const orgNode = nodeMap["org:" + orgName];
+  if (orgNode && orgNode.members && orgNode.members.length > 0) {
+    return new Set(orgNode.members);
+  }
+  // fallback: scan paper authors + person nodes
+  const names = new Set();
+  DATA.papers.forEach(p => p.authors.forEach(a => { if (a.affiliation === orgName) names.add(a.name); }));
+  DATA.nodes.forEach(n => { if (n.type === "person" && n.org === orgName) names.add(n.name); });
+  return names;
+}
+
+// === Load data ===
+fetch("graph_data.json?t=" + Date.now())
+  .then(r => { if (!r.ok) throw new Error("Failed to load data"); return r.json(); })
+  .then(data => {
+    DATA = data;
+    DATA.nodes.forEach(n => { nodeMap[n.id] = n; n._ox = null; n._oy = null; });
+    DATA.papers.forEach(p => paperMap[p.title] = p);
+    DATA.meta.venues_covered.forEach(v => activeVenues.add(v));
+    // pre-compute org positions on a wide ring
+    const container = document.getElementById("graph-container");
+    const W = container.clientWidth, H = container.clientHeight;
+    const orgNodes = DATA.nodes.filter(n => n.type === "org");
+    orgNodes.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / orgNodes.length;
+      const r = Math.min(W, H) * 0.32 + Math.random() * 40;
+      n._ox = W/2 + Math.cos(angle) * r;
+      n._oy = H/2 + Math.sin(angle) * r;
+    });
+    renderVenueChips();
+    initSVG();
+    renderGraph();  // only renders visible nodes!
+    renderPanel("global");
+    updateFooter();
+    setTimeout(() => document.getElementById("graph-hint")?.classList.add("hidden"), 5000);
+  })
+  .catch(err => {
+    document.getElementById("panel").innerHTML = `<div class="empty-state">Failed to load graph_data.json<br><small>${esc(err.message)}</small></div>`;
+  });
+
+// === Stats ===
+function computeFilteredStats() {
+  const papers = DATA.papers.filter(p => activeVenues.has(p.venue));
+  const personSet = new Set();
+  papers.forEach(p => p.authors.forEach(a => personSet.add(a.name)));
+  const orgCount = {};
+  DATA.nodes.filter(n => n.type === "org" && n.name !== "Unknown" && n.venues.some(v => activeVenues.has(v)))
+    .forEach(n => { const c = n.papers.filter(t => paperMap[t] && activeVenues.has(paperMap[t].venue)).length; if (c > 0) orgCount[n.name] = c; });
+  const allOrgs = Object.entries(orgCount).sort((a,b) => b[1]-a[1]);
+  const persCount = {};
+  DATA.nodes.filter(n => n.type === "person" && n.venues.some(v => activeVenues.has(v)))
+    .forEach(n => { const c = n.papers.filter(t => paperMap[t] && activeVenues.has(paperMap[t].venue)).length; if (c > 0) persCount[n.name] = c; });
+  const allPersons = Object.entries(persCount).sort((a,b) => b[1]-a[1]);
+  return { paper_count: papers.length, person_count: personSet.size, org_count: allOrgs.length, top_orgs: allOrgs, top_persons: allPersons };
+}
+
+// === Venue chips ===
+function venueLabel(v) { return v.replace(/\s*\d{2}(\d{2})$/, "'$1"); }
+function renderVenueChips() {
+  const el = document.getElementById("venue-chips");
+  // sort venues: year descending, then name ascending (e.g. ICSE 2026, FSE 2026, ASE 2025, ...)
+  const venues = [...DATA.meta.venues_covered].sort((a, b) => {
+    const ya = parseInt(a.match(/\d{4}/)?.[0]) || 0, yb = parseInt(b.match(/\d{4}/)?.[0]) || 0;
+    if (yb !== ya) return yb - ya;
+    return a.localeCompare(b);
+  });
+  // count papers per venue
+  const venueCounts = {};
+  DATA.papers.forEach(p => { venueCounts[p.venue] = (venueCounts[p.venue] || 0) + 1; });
+  // "All" chip + individual venue chips
+  const allActive = venues.every(v => activeVenues.has(v));
+  el.innerHTML = (venues.length > 1 ? `<button class="chip${allActive ? ' active' : ''}" data-venue="__all__">All</button>` : '') +
+    venues.map(v =>
+      `<button class="chip${activeVenues.has(v) ? ' active' : ''}" data-venue="${v}">${venueLabel(v)} <span style="opacity:0.6">${venueCounts[v] || 0}</span></button>`
+    ).join("");
+  el.querySelectorAll(".chip").forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.dataset.venue;
+      if (v === "__all__") {
+        // toggle all: if all active → deselect all but first; else → select all
+        if (allActive) {
+          venues.forEach(vv => activeVenues.delete(vv));
+          activeVenues.add(venues[0]);
+        } else {
+          venues.forEach(vv => activeVenues.add(vv));
+        }
+      } else {
+        if (activeVenues.has(v)) {
+          // don't allow deselecting the last one
+          if (activeVenues.size <= 1) return;
+          activeVenues.delete(v);
+        } else {
+          activeVenues.add(v);
+        }
+      }
+      renderVenueChips();  // re-render chips to update active state
+      if (expandedOrg) {
+        const orgNode = nodeMap["org:" + expandedOrg];
+        if (!orgNode || !orgNode.venues.some(v2 => activeVenues.has(v2))) { expandedOrg = null; selectedPerson = null; }
+      }
+      renderGraph();
+      if (expandedOrg) renderPanel("org", nodeMap["org:" + expandedOrg]);
+      else if (selectedPerson) renderPanel("person", selectedPerson);
+      else if (currentRankList) showRankList(currentRankList, true);
+      else renderPanel("global");
+    };
+  });
+}
+
+// === SVG setup (once) ===
+function initSVG() {
+  const container = document.getElementById("graph-container");
+  const W = container.clientWidth, H = container.clientHeight;
+  svg = d3.select(container).append("svg").attr("viewBox", [0, 0, W, H]);
+  zoom = d3.zoom().scaleExtent([0.2, 5]).on("zoom", e => gMain.attr("transform", e.transform));
+  svg.call(zoom);
+  svg.append("rect").attr("width", W*3).attr("height", H*3)
+    .attr("x", -W).attr("y", -H).attr("fill", "transparent")
+    .on("click", () => { if (expandedOrg || selectedPerson) collapseToOrg(); });
+  gMain = svg.append("g");
+  gLinks = gMain.append("g");
+  gNodes = gMain.append("g");
+  window.addEventListener("resize", () => {
+    const nW = container.clientWidth, nH = container.clientHeight;
+    svg.attr("viewBox", [0, 0, nW, nH]);
+  });
+}
+
+// === CORE: renderGraph — only creates DOM for visible nodes/edges ===
+function renderGraph() {
+  if (!svg) return;
+  const container = document.getElementById("graph-container");
+  const W = container.clientWidth, H = container.clientHeight;
+  const venueOk = n => n.venues.some(v => activeVenues.has(v));
+  // stop previous simulation
+  if (simulation) simulation.stop();
+
+  // determine visible nodes and edges
+  let visNodes, visEdges;
+  if (expandedOrg === null) {
+    // org-level view: use venue-filtered paper count for threshold
+    visNodes = DATA.nodes.filter(n => {
+      if (n.type !== "org" || n.name === "Unknown" || !venueOk(n)) return false;
+      return venueFilteredCount(n) >= orgThreshold;
+    });
+    const visIds = new Set(visNodes.map(n => n.id));
+    visEdges = DATA.edges.filter(e => e.type === "org_collab" && visIds.has(e.source) && visIds.has(e.target));
+    // restore saved positions or use pre-computed ring positions
+    visNodes.forEach(n => {
+      if (n._ox != null) { n.x = n._ox; n.y = n._oy; }
+    });
+  } else {
+    // expanded: show members of the expanded org + external coauthors
+    const memberNames = getOrgMemberIds(expandedOrg);
+    const coreNodes = DATA.nodes.filter(n => n.type === "person" && memberNames.has(n.name) && venueOk(n));
+    const coreIds = new Set(coreNodes.map(n => n.id));
+    // find external nodes with strong collaboration (≥2 joint papers)
+    const extIds = new Set();
+    DATA.edges.forEach(e => {
+      if (e.type !== "coauthor" || e.weight < 2) return;
+      if (coreIds.has(e.source) && !coreIds.has(e.target)) extIds.add(e.target);
+      if (coreIds.has(e.target) && !coreIds.has(e.source)) extIds.add(e.source);
+    });
+    const extNodes = DATA.nodes.filter(n => extIds.has(n.id) && venueOk(n));
+    // mark nodes
+    coreNodes.forEach(n => n._external = false);
+    extNodes.forEach(n => n._external = true);
+    visNodes = [...coreNodes, ...extNodes];
+    const visIds = new Set(visNodes.map(n => n.id));
+    visEdges = DATA.edges.filter(e => e.type === "coauthor" && visIds.has(e.source) && visIds.has(e.target));
+  }
+
+  // make shallow copies for d3 force (so it doesn't mutate source/target to objects on DATA.edges)
+  const edgeCopies = visEdges.map(e => ({...e}));
+
+  // clear old DOM
+  gLinks.selectAll("*").remove();
+  gNodes.selectAll("*").remove();
+
+  // draw edges — cross-org edges are dashed when in expanded view
+  const coreIdSet = expandedOrg ? new Set(visNodes.filter(n => !n._external).map(n => n.id)) : null;
+  const linkSel = gLinks.selectAll("line").data(edgeCopies).enter().append("line")
+    .attr("class", "edge-line")
+    .attr("stroke-width", d => Math.max(0.5, d.weight * 1.5))
+    .attr("stroke-opacity", d => d.weight >= 3 ? 0.5 : d.weight >= 2 ? 0.35 : 0.2)
+    .attr("stroke-dasharray", d => {
+      if (!coreIdSet) return null;
+      const sid = typeof d.source === "object" ? d.source.id : d.source;
+      const tid = typeof d.target === "object" ? d.target.id : d.target;
+      return (coreIdSet.has(sid) && coreIdSet.has(tid)) ? null : "4,3";
+    });
+
+  // draw nodes
+  const nodeSel = gNodes.selectAll("g").data(visNodes).enter().append("g")
+    .attr("class", "node-group")
+    .call(d3.drag().on("start", dragStart).on("drag", dragging).on("end", dragEnd));
+
+  nodeSel.append("circle")
+    .attr("class", "node-circle")
+    .attr("r", d => {
+      const r = d.type === "org" ? Math.max(10, Math.sqrt(venueFilteredCount(d)) * 8) : getRadius(d);
+      return d._external ? Math.max(3, r * 0.6) : r;
+    })
+    .attr("fill", d => d._external ? "#9A998E" : COLORS[d.metrics.community_id % COLORS.length])
+    .attr("stroke", d => d._external ? "rgba(255,255,255,0.6)" : "#fff")
+    .attr("stroke-width", d => d.type === "org" ? 2 : d._external ? 1 : 1.5)
+    .attr("opacity", d => d._external ? 0.7 : 1)
+    .on("click", (e, d) => { e.stopPropagation(); onNodeClick(d); })
+    .on("mouseenter", (e, d) => showTooltip(e, d))
+    .on("mouseleave", hideTooltip);
+
+  nodeSel.append("text")
+    .attr("class", "node-label")
+    .attr("dy", d => {
+      const r = d.type === "org" ? Math.max(10, Math.sqrt(venueFilteredCount(d)) * 8) : getRadius(d);
+      return (d._external ? Math.max(3, r * 0.6) : r) + 14;
+    })
+    .attr("font-size", d => d.type === "org" ? "12px" : d._external ? "7px" : "9px")
+    .attr("font-weight", d => d.type === "org" ? "600" : "400")
+    .attr("opacity", d => d._external ? 0.5 : 1)
+    .text(d => d.name);
+
+  // create simulation with ONLY visible nodes
+  const isOrgLevel = expandedOrg === null;
+  simulation = d3.forceSimulation(visNodes)
+    .force("link", d3.forceLink(edgeCopies).id(d => d.id).distance(isOrgLevel ? 150 : 50).strength(isOrgLevel ? 0.15 : 0.3))
+    .force("charge", d3.forceManyBody().strength(isOrgLevel ? -800 : -200))
+    .force("center", d3.forceCenter(W/2, H/2).strength(0.05))
+    .force("collide", d3.forceCollide().radius(d => getRadius(d) + 8))
+    .on("tick", () => {
+      linkSel.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+             .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+      nodeSel.attr("transform", d => `translate(${d.x},${d.y})`);
+    })
+    .alpha(1).velocityDecay(0.3);
+
+  // apply search highlight if active
+  if (searchQuery) applySearch();
+
+  // auto-fit after settling
+  setTimeout(() => zoomToFitAll(), 600);
+}
+
+// === Node click ===
+function onNodeClick(d) {
+  if (d.type === "org") {
+    expandOrg(d.name);
+  } else if (d.type === "person") {
+    selectedPerson = d;
+    highlightPerson(d);
+    renderPanel("person", d);
+  }
+}
+
+function expandOrg(orgName, skipPanel) {
+  // save current org positions before switching
+  if (expandedOrg === null) {
+    DATA.nodes.filter(n => n.type === "org").forEach(n => { if (n.x != null) { n._ox = n.x; n._oy = n.y; } });
+  }
+  const orgNode = nodeMap["org:" + orgName];
+  expandedOrg = orgName;
+  selectedPerson = null;
+  // position core members on inner ring, external on outer ring
+  const memberNames = getOrgMemberIds(orgName);
+  const cx = orgNode?.x ?? orgNode?._ox ?? 400, cy = orgNode?.y ?? orgNode?._oy ?? 300;
+  let i = 0;
+  const coreCount = DATA.nodes.filter(n => n.type === "person" && memberNames.has(n.name)).length;
+  const innerR = 50 + coreCount * 3;
+  DATA.nodes.forEach(n => {
+    if (n.type === "person" && memberNames.has(n.name)) {
+      const angle = (2 * Math.PI * i) / Math.max(coreCount, 1);
+      n.x = cx + Math.cos(angle) * innerR;
+      n.y = cy + Math.sin(angle) * innerR;
+      n.vx = 0; n.vy = 0;
+      n._external = false;
+      i++;
+    }
+  });
+  // position external collaborators on outer ring
+  const outerR = innerR + 80;
+  let j = 0;
+  const extCandidates = [];
+  const coreIds = new Set(DATA.nodes.filter(n => n.type === "person" && memberNames.has(n.name)).map(n => n.id));
+  DATA.edges.forEach(e => {
+    if (e.type !== "coauthor" || e.weight < 2) return;
+    if (coreIds.has("person:" + e.source?.replace?.("person:","")) || coreIds.has(e.source)) {
+      extCandidates.push(e.target);
+    }
+    if (coreIds.has("person:" + e.target?.replace?.("person:","")) || coreIds.has(e.target)) {
+      extCandidates.push(e.source);
+    }
+  });
+  const extIdSet = new Set(extCandidates.filter(id => !coreIds.has(id)));
+  const extCount = extIdSet.size || 1;
+  DATA.nodes.forEach(n => {
+    if (n.type === "person" && !memberNames.has(n.name)) {
+      n._external = true;
+      if (extIdSet.has(n.id)) {
+        const angle = (2 * Math.PI * j) / extCount;
+        n.x = cx + Math.cos(angle) * outerR;
+        n.y = cy + Math.sin(angle) * outerR;
+        n.vx = 0; n.vy = 0;
+        j++;
+      }
+    }
+  });
+  renderGraph();
+  if (!skipPanel) renderPanel("org", orgNode);
+}
+
+function collapseToOrg() {
+  if (expandedOrg === null && selectedPerson === null && !searchQuery && !currentRankList) return;
+  expandedOrg = null;
+  selectedPerson = null;
+  searchQuery = "";
+  currentRankList = null;
+  panelHistory = [];
+  document.getElementById("search").value = "";
+  renderGraph();
+  renderPanel("global");
+}
+
+
+// === Zoom helpers ===
+function zoomToFitAll() {
+  if (!simulation) return;
+  const visNodes = simulation.nodes();
+  if (visNodes.length === 0) return;
+  setTimeout(() => {
+    const xs = visNodes.map(n => n.x).filter(v => v != null && !isNaN(v));
+    const ys = visNodes.map(n => n.y).filter(v => v != null && !isNaN(v));
+    if (xs.length === 0) return;
+    const container = document.getElementById("graph-container");
+    const W = container.clientWidth, H = container.clientHeight;
+    const cx = (d3.min(xs) + d3.max(xs)) / 2;
+    const cy = (d3.min(ys) + d3.max(ys)) / 2;
+    const dx = d3.max(xs) - d3.min(xs) + 150;
+    const dy = d3.max(ys) - d3.min(ys) + 150;
+    const scale = Math.min(2, 0.85 / Math.max(dx / W, dy / H));
+    svg.transition().duration(500).call(
+      zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(scale).translate(-cx, -cy)
+    );
+  }, 100);
+}
+
+function zoomToNode(d) {
+  if (!d || d.x == null || d.y == null) return;
+  const container = document.getElementById("graph-container");
+  const W = container.clientWidth, H = container.clientHeight;
+  svg.transition().duration(500).call(
+    zoom.transform, d3.zoomIdentity.translate(W/2, H/2).scale(1.5).translate(-d.x, -d.y)
+  );
+}
+
+// === Highlight ===
+function clearHighlights() {
+  if (!gNodes) return;
+  gNodes.selectAll(".node-circle").classed("dimmed", false).classed("glowing", false);
+  gLinks.selectAll(".edge-line").classed("dimmed", false).classed("highlighted", false);
+}
+
+function highlightPerson(d) {
+  if (!gNodes || !gLinks) return;
+  const pid = d.id;
+  gNodes.selectAll(".node-circle").classed("dimmed", true).classed("glowing", false);
+  gLinks.selectAll(".edge-line").classed("dimmed", true).classed("highlighted", false);
+  // glow the selected node
+  gNodes.selectAll(".node-group").filter(n => n.id === pid)
+    .select(".node-circle").classed("dimmed", false).classed("glowing", true);
+  // highlight connected edges and un-dim connected nodes
+  const connectedIds = new Set();
+  gLinks.selectAll(".edge-line").each(function(e) {
+    // d3 force mutates source/target from string → object; handle both
+    const sid = (e.source && e.source.id) || e.source;
+    const tid = (e.target && e.target.id) || e.target;
+    if (sid === pid || tid === pid) {
+      d3.select(this).classed("dimmed", false).classed("highlighted", true);
+      connectedIds.add(sid === pid ? tid : sid);
+    }
+  });
+  // un-dim connected neighbor nodes
+  if (connectedIds.size > 0) {
+    gNodes.selectAll(".node-group").filter(n => connectedIds.has(n.id))
+      .select(".node-circle").classed("dimmed", false);
+  }
+}
+
+// === Search ===
+document.getElementById("search").addEventListener("input", debounce(e => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  if (!DATA || !svg) return;
+  if (!searchQuery) {
+    clearHighlights();
+    if (expandedOrg) renderPanel("org", nodeMap["org:" + expandedOrg]);
+    else renderPanel("global");
+    return;
+  }
+  applySearch();
+}, 300));
+
+function applySearch() {
+  if (!gNodes || !searchQuery) return;
+  const q = searchQuery;
+
+  // search ALL nodes (not just visible ones) for results panel
+  const matchedPersons = [];
+  const matchedOrgs = new Set();
+  const matchedPapers = [];
+
+  DATA.nodes.forEach(d => {
+    const nameMatch = d.name.toLowerCase().includes(q);
+    const paperMatch = d.papers.some(t => t.toLowerCase().includes(q));
+    const absMatch = d.papers.some(t => (paperMap[t]?.abstract || "").toLowerCase().includes(q));
+    if (nameMatch || paperMatch || absMatch) {
+      if (d.type === "person") {
+        matchedPersons.push(d);
+        matchedOrgs.add(d.org);
+      } else if (d.type === "org") {
+        matchedOrgs.add(d.name);
+      }
+    }
+  });
+  DATA.papers.forEach(p => {
+    if (p.title.toLowerCase().includes(q) || (p.abstract || "").toLowerCase().includes(q)) {
+      matchedPapers.push(p);
+    }
+  });
+
+  // highlight visible nodes: glow matched, dim unmatched
+  // in org-level: glow orgs that have matched members or matched directly
+  gNodes.selectAll(".node-group").each(function(d) {
+    let match = false;
+    if (d.type === "org") {
+      match = matchedOrgs.has(d.name);
+    } else {
+      match = matchedPersons.some(m => m.id === d.id);
+    }
+    d3.select(this).select(".node-circle").classed("dimmed", !match).classed("glowing", match);
+  });
+  gLinks.selectAll(".edge-line").classed("dimmed", true);
+
+  // render search results in panel
+  const el = document.getElementById("panel");
+  el.scrollTop = 0;
+  const maxShow = 20;
+  el.innerHTML = `
+    <h2>Search: "${esc(searchQuery)}"</h2>
+    ${matchedPersons.length ? `<div class="section-label">Authors (${matchedPersons.length})</div>` +
+      matchedPersons.slice(0, maxShow).map(p =>
+        `<div class="list-item" onclick="onPersonClick('${jsEsc(p.id)}')">${esc(p.name)} <span class="count">${esc(p.org)}</span></div>`
+      ).join("") + (matchedPersons.length > maxShow ? `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.3rem 0.5rem">+${matchedPersons.length - maxShow} more</div>` : '') : ''}
+    ${matchedPapers.length ? `<div class="section-label">Papers (${matchedPapers.length})</div>` +
+      matchedPapers.slice(0, maxShow).map(p =>
+        `<div class="paper-item"><div class="paper-title" style="cursor:default"><span class="venue-tag">${esc(venueLabel(p.venue))}</span><span style="flex:1">${esc(p.title)}</span></div></div>`
+      ).join("") + (matchedPapers.length > maxShow ? `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.3rem 0.5rem">+${matchedPapers.length - maxShow} more</div>` : '') : ''}
+    ${!matchedPersons.length && !matchedPapers.length ? '<div class="empty-state">No results found</div>' : ''}
+  `;
+}
+
+// === Navigation from panel ===
+function panelNav() {
+  const showHome = panelHistory.length > 1;
+  return `<div class="panel-nav"><span class="back-btn" onclick="panelBack()">← Back</span>${showHome ? '<span class="home-btn" onclick="collapseToOrg()">Overview</span>' : ''}</div>`;
+}
+function pushPanel() {
+  panelHistory.push({ expandedOrg, selectedPerson, currentRankList });
+}
+function panelBack() {
+  if (!panelHistory.length) { collapseToOrg(); return; }
+  const prev = panelHistory.pop();
+  expandedOrg = prev.expandedOrg;
+  selectedPerson = prev.selectedPerson;
+  currentRankList = prev.currentRankList;
+  clearHighlights();
+  if (currentRankList) { renderGraph(); showRankList(currentRankList, true); }
+  else if (selectedPerson) { highlightPerson(selectedPerson); renderGraph(); renderPanel("person", selectedPerson); }
+  else if (expandedOrg) { renderGraph(); renderPanel("org", nodeMap["org:" + expandedOrg]); }
+  else { renderGraph(); renderPanel("global"); }
+}
+
+function onPersonClick(id) {
+  const d = nodeMap[id];
+  if (!d) return;
+  pushPanel();
+  // check if person is already visible in the current expanded org
+  let alreadyVisible = false;
+  if (expandedOrg !== null) {
+    const members = getOrgMemberIds(expandedOrg);
+    alreadyVisible = members.has(d.name);
+  }
+  if (!alreadyVisible) {
+    // need to expand this person's org first
+    const targetOrg = d.org || "";
+    if (targetOrg) expandOrg(targetOrg, true);
+  }
+  selectedPerson = d;
+  highlightPerson(d);
+  renderPanel("person", d);
+  setTimeout(() => zoomToNode(d), 300);
+}
+
+function showRankList(type, isBack) {
+  if (!isBack) pushPanel();
+  currentRankList = type;
+  const m = computeFilteredStats();
+  const el = document.getElementById("panel");
+  const isOrgs = type === "orgs";
+  const list = isOrgs ? m.top_orgs : m.top_persons;
+  const title = isOrgs ? "All Organizations" : "All Researchers";
+  el.innerHTML = `
+    ${panelNav()}
+    <h2>${title} <span class="count" style="font-size:0.85rem;font-weight:400">${list.length}</span></h2>
+    <div class="rank-list">${list.map(([name, c], i) =>
+      `<div class="list-item" onclick="jumpToNode('${isOrgs ? "org" : "person"}:${jsEsc(name)}')"><span class="rank-num">${i+1}.</span> ${esc(name)} <span class="count">${c}p</span></div>`
+    ).join("")}</div>
+  `;
+}
+function jumpToNode(id) {
+  const d = nodeMap[id];
+  if (!d) return;
+  if (d.type === "org") { pushPanel(); expandOrg(d.name); return; }
+  if (d.type === "person") { onPersonClick(id); return; }
+}
+
+// === Threshold toggle ===
+function setThreshold(val) {
+  orgThreshold = Math.max(1, parseInt(val) || 1);
+  if (expandedOrg) { expandedOrg = null; selectedPerson = null; }
+  renderGraph();
+  renderPanel("global");
+}
+
+// === Tooltip ===
+const tooltipEl = document.getElementById("tooltip");
+function venueFilteredCount(d) {
+  return d.papers.filter(t => { const p = paperMap[t]; return p && activeVenues.has(p.venue); }).length;
+}
+function showTooltip(e, d) {
+  const pc = venueFilteredCount(d);
+  const text = d.type === "org"
+    ? `${d.name} — ${pc} papers`
+    : `${d.name} — ${d.org} (${pc} papers)`;
+  tooltipEl.textContent = text;
+  tooltipEl.style.left = (e.clientX + 14) + "px";
+  tooltipEl.style.top = (e.clientY - 12) + "px";
+  tooltipEl.style.opacity = 1;
+}
+function hideTooltip() { tooltipEl.style.opacity = 0; }
+
+// === Drag ===
+function dragStart(e, d) { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+function dragging(e, d) { d.fx = e.x; d.fy = e.y; }
+function dragEnd(e, d) { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
+
+// === Panel ===
+function renderPanel(mode, data) {
+  const el = document.getElementById("panel");
+  el.scrollTop = 0;
+
+  if (mode === "global") {
+    const m = computeFilteredStats();
+    const scopeText = [...activeVenues].join(", ") || "None";
+    const venueOk = n => n.venues.some(v => activeVenues.has(v));
+    const visibleCount = DATA.nodes.filter(n => n.type === "org" && n.name !== "Unknown" && venueOk(n) && venueFilteredCount(n) >= orgThreshold).length;
+    const totalOrgCount = m.org_count;
+    el.innerHTML = `
+      <h2>Overview</h2>
+      <div class="filter-scope">Scope: ${esc(scopeText)} · Graph: ${visibleCount}/${totalOrgCount} orgs
+        <span style="margin-left:0.4rem">≥ <input type="number" id="threshold-input" value="${orgThreshold}" min="1" max="50" style="width:3rem;padding:0.15rem 0.3rem;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:var(--mono);font-size:0.75rem;text-align:center;background:var(--bg-card)"> papers</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><div class="num">${m.paper_count}</div><div class="label">Papers</div></div>
+        <div class="stat clickable-stat" onclick="showRankList('persons')"><div class="num">${m.person_count}</div><div class="label">Authors ›</div></div>
+        <div class="stat clickable-stat" onclick="showRankList('orgs')"><div class="num">${m.org_count}</div><div class="label">Orgs ›</div></div>
+      </div>
+      <div class="section-label">Top Organizations</div>
+      ${m.top_orgs.length ? m.top_orgs.slice(0,10).map(([o, c]) => `<div class="list-item" onclick="jumpToNode('org:${jsEsc(o)}')">${esc(o)} <span class="count">${c}p</span></div>`).join("") : '<div class="empty-state">No data</div>'}
+      <div class="section-label">Top Researchers</div>
+      ${m.top_persons.length ? m.top_persons.slice(0,10).map(([p, c]) => `<div class="list-item" onclick="jumpToNode('person:${jsEsc(p)}')">${esc(p)} <span class="count">${c}p</span></div>`).join("") : '<div class="empty-state">No data</div>'}
+    `;
+    const thInput = document.getElementById("threshold-input");
+    if (thInput) thInput.onchange = () => setThreshold(thInput.value);
+  } else if (mode === "org" && data) {
+    const memberSet = data.members ? new Set(data.members) : getOrgMemberIds(data.name);
+    // venue-aware: only count papers matching active venues
+    const venueFilter = t => { const p = paperMap[t]; return p && activeVenues.has(p.venue); };
+    const orgPapers = data.papers.filter(venueFilter);
+    const orgPaperSet = new Set(orgPapers);
+    const members = DATA.nodes.filter(n => n.type === "person" && memberSet.has(n.name))
+      .map(m => ({ ...m, _orgCount: m.papers.filter(t => orgPaperSet.has(t)).length }))
+      .filter(m => m._orgCount > 0)
+      .sort((a, b) => b._orgCount - a._orgCount || b.metrics.paper_count - a.metrics.paper_count);
+    const collabEdges = DATA.edges.filter(e => e.type === "org_collab" &&
+      (e.source === data.id || e.target === data.id) &&
+      e.venues.some(v => activeVenues.has(v)))
+      .sort((a, b) => b.weight - a.weight).slice(0, 5);
+    // sort papers: by venue, then title alphabetically
+    const sortedPapers = sortPapers(orgPapers);
+    el.innerHTML = `
+      ${panelNav()}
+      <h3>${esc(data.name)}</h3>
+      <div style="margin:0.4rem 0">
+        <span class="tag tag-accent">${orgPapers.length} papers</span>
+        <span class="tag tag-blue">${members.length} authors</span>
+      </div>
+      <div class="section-label">Members</div>
+      ${members.map(m => `<div class="list-item" onclick="onPersonClick('${jsEsc(m.id)}')">${esc(m.name)} <span class="count">${m._orgCount}p</span></div>`).join("")}
+      <div class="section-label">Papers</div>
+      ${sortedPapers.map(t => renderPaperItem(t, null)).join("")}
+      ${collabEdges.length ? `<div class="section-label">Top Collaborating Orgs</div>` +
+        collabEdges.map(e => {
+          const oName = nodeMap[e.source === data.id ? e.target : e.source]?.name;
+          return oName ? `<div class="list-item" onclick="jumpToNode('org:${jsEsc(oName)}')">${esc(oName)} <span class="count">${e.weight} joint</span></div>` : '';
+        }).join("") : ""}
+    `;
+    bindPaperToggles();
+  } else if (mode === "person" && data) {
+    // venue-aware: filter papers and coauthor edges by active venues
+    const venueFilter = t => { const p = paperMap[t]; return p && activeVenues.has(p.venue); };
+    const visPapers = data.papers.filter(venueFilter);
+    const coauthorEdges = DATA.edges.filter(e => e.type === "coauthor" &&
+      (e.source === data.id || e.target === data.id) &&
+      e.venues.some(v => activeVenues.has(v)))
+      .sort((a, b) => b.weight - a.weight);
+    const topCoauthors = coauthorEdges.slice(0, 5).map(e => ({
+      node: nodeMap[e.source === data.id ? e.target : e.source],
+      weight: e.weight
+    })).filter(x => x.node);
+    el.innerHTML = `
+      ${panelNav()}
+      <h3>${esc(data.name)}</h3>
+      <div style="margin:0.4rem 0">${getPersonOrgs(data.name).map(o => '<span class="tag tag-accent' + (o === data.org ? '' : ' tag-secondary') + '" onclick="jumpToNode(\'org:' + jsEsc(o) + '\')" style="cursor:pointer">' + esc(o) + '</span>').join(" ")}</div>
+      <p style="margin:0.5rem 0;font-size:0.82rem;color:var(--text-secondary);line-height:1.5">${esc(data.summary)}</p>
+      <div class="section-label">Papers (${visPapers.length})</div>
+      ${sortPapers(visPapers).map(t => renderPaperItem(t, data.name)).join("")}
+      ${topCoauthors.length ? `<div class="section-label">Top Coauthors</div>` +
+        topCoauthors.map(({node: c, weight: w}) => `<div class="list-item" onclick="onPersonClick('${jsEsc(c.id)}')" style="flex-wrap:wrap"><span>${esc(c.name)}</span> <span class="count">${w}p · ${esc(c.org)}</span></div>`).join("") : ""}
+    `;
+    bindPaperToggles();
+  }
+}
+
+function sortPapers(papers) {
+  // sort by venue (alphabetical), then title (alphabetical)
+  return [...papers].sort((a, b) => {
+    const pa = paperMap[a], pb = paperMap[b];
+    if (!pa || !pb) return 0;
+    const va = pa.venue || "", vb = pb.venue || "";
+    if (va !== vb) return va.localeCompare(vb);
+    return a.localeCompare(b);
+  });
+}
+function renderPaperItem(title, personName) {
+  const p = paperMap[title];
+  if (!p) return `<div class="paper-item"><div class="paper-title"><span>${esc(title)}</span></div></div>`;
+  const abs = p.abstract || "";
+  let posTag = "";
+  if (personName && p.authors.length > 0) {
+    const idx = p.authors.findIndex(a => a.name === personName);
+    if (idx === 0) posTag = '<span class="pos-tag">#1</span>';
+    else if (idx === p.authors.length - 1) posTag = '<span class="pos-tag last">#' + p.authors.length + '</span>';
+    else if (idx > 0) posTag = '<span class="pos-tag">#' + (idx+1) + '</span>';
+  }
+  // venue tag: "FSE 2026" → "FSE'26"
+  const venueTag = p.venue ? `<span class="venue-tag">${esc(p.venue.replace(/\s*\d{2}(\d{2})$/, "'$1"))}</span>` : '';
+  // clickable author list
+  const authorHtml = p.authors.map(a => {
+    const pid = "person:" + a.name;
+    return nodeMap[pid]
+      ? `<span class="paper-author" onclick="onPersonClick('${jsEsc(pid)}')">${esc(a.name)}</span>`
+      : `<span class="paper-author-plain">${esc(a.name)}</span>`;
+  }).join(", ");
+  return `<div class="paper-item">
+    <div class="paper-title"${abs ? ' data-abs="1"' : ''}>${abs ? '<span class="arrow">\u25B8</span>' : ''}${posTag}${venueTag}<span style="flex:1">${esc(title)}</span></div>
+    <div class="paper-authors">${authorHtml}</div>
+    ${abs ? `<div class="paper-abstract">${esc(abs)}</div>` : ""}
+  </div>`;
+}
+
+
+function bindPaperToggles() {
+  document.querySelectorAll(".paper-title[data-abs='1']").forEach(el => {
+    el.onclick = () => {
+      // abstract is inside the same .paper-item parent, after .paper-authors
+      const abs = el.closest(".paper-item")?.querySelector(".paper-abstract");
+      const arrow = el.querySelector(".arrow");
+      if (abs) abs.classList.toggle("open");
+      if (arrow) arrow.classList.toggle("open");
+    };
+  });
+}
+
+// === Footer ===
+function updateFooter() {
+  document.getElementById("footer-info").textContent =
+    `Source: ${DATA.meta.venues_covered.join(", ")} · Updated: ${DATA.meta.last_updated.split("T")[0]} · ${DATA.meta.total_stats.paper_count} papers`;
+}
+
+</script>
+</body>
+</html>
