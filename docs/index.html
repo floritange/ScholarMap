@@ -35,17 +35,46 @@ h4{font-family:var(--sans);font-weight:600;font-size:0.875rem;margin-bottom:0.4r
 header{display:flex;align-items:center;gap:1rem;padding:0.75rem 1.25rem;border-bottom:1px solid var(--border);flex-shrink:0}
 header .logo{font-family:var(--serif);font-size:1.25rem;white-space:nowrap}
 header .logo span{color:var(--accent)}
-#search{flex:1;max-width:300px;padding:0.4rem 0.75rem;border:1px solid var(--border-strong);border-radius:100px;font-family:var(--sans);font-size:0.875rem;background:var(--bg-card);outline:none}
+#search{flex:1;max-width:280px;padding:0.4rem 0.75rem;border:1px solid var(--border-strong);border-radius:100px;font-family:var(--sans);font-size:0.875rem;background:var(--bg-card);outline:none}
 #search:focus{border-color:var(--accent)}
-.venue-chips{display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center}
-.chip{padding:0.3rem 0.75rem;border:1px solid var(--border-strong);border-radius:100px;font-size:0.8rem;font-weight:500;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.15s}
+/* venue trigger button in header */
+.venue-wrap{position:relative;flex-shrink:0}
+.venue-trigger{padding:0.35rem 0.75rem;border:1px solid var(--border-strong);border-radius:100px;font-size:0.8rem;font-weight:500;background:var(--bg-card);color:var(--text);cursor:pointer;transition:all 0.15s;white-space:nowrap;font-family:var(--sans)}
+.venue-trigger:hover{border-color:var(--text)}
+.venue-trigger .venue-count{font-size:0.7rem;color:var(--accent);font-weight:600}
+/* floating dropdown panel */
+.venue-dropdown{position:absolute;top:calc(100% + 0.4rem);right:0;width:480px;max-height:70vh;overflow-y:auto;background:var(--bg-card);border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.15);padding:0.85rem;z-index:200}
+.venue-dropdown.hidden{display:none}
+/* area group inside dropdown */
+.area-group{margin-bottom:0.6rem}
+.area-group:last-child{margin-bottom:0}
+.area-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem}
+.area-label{font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.area-actions{font-size:0.65rem;color:var(--accent);cursor:pointer;background:none;border:none;font-family:var(--sans)}
+.area-actions:hover{text-decoration:underline}
+.area-chips{display:flex;gap:0.3rem;flex-wrap:wrap}
+/* venue chips */
+.chip{padding:0.3rem 0.65rem;border:1.5px solid var(--border-strong);border-radius:100px;font-size:0.75rem;font-weight:500;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.15s}
 .chip:hover{border-color:var(--text);color:var(--text)}
 .chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.chip .cnt{opacity:0.5;font-size:0.65rem;margin-left:0.1rem}
+/* All / None row at top of dropdown */
+.dropdown-top{display:flex;gap:0.4rem;margin-bottom:0.6rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.dropdown-top .btn{padding:0.25rem 0.65rem;border:1.5px solid var(--border-strong);border-radius:100px;font-size:0.72rem;font-weight:600;background:transparent;color:var(--text-secondary);cursor:pointer;transition:all 0.15s;font-family:var(--sans)}
+.dropdown-top .btn:hover{border-color:var(--text);color:var(--text)}
+.dropdown-top .btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
 .main{display:flex;flex:1;overflow:hidden}
 #graph-container{flex:1;position:relative;overflow:hidden}
 #graph-container svg{width:100%;height:100%;display:block}
 .graph-hint{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);font-size:0.75rem;color:var(--text-muted);background:rgba(245,244,237,0.9);padding:0.3rem 0.8rem;border-radius:100px;pointer-events:none;opacity:1;transition:opacity 1s}
 .graph-hint.hidden{opacity:0}
+.breadcrumb{position:absolute;top:0.6rem;left:0.8rem;display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--text-muted);pointer-events:auto;z-index:10}
+.breadcrumb span{cursor:pointer;padding:0.15rem 0.4rem;border-radius:var(--radius);transition:all 0.15s}
+.breadcrumb span:hover{background:rgba(20,20,19,0.06);color:var(--text)}
+.breadcrumb .sep{cursor:default;padding:0;color:var(--text-muted);opacity:0.5}
+.breadcrumb .sep:hover{background:none;color:var(--text-muted)}
+.breadcrumb .current{color:var(--text);font-weight:500;cursor:default}
+.breadcrumb .current:hover{background:none}
 #panel{width:340px;flex-shrink:0;border-left:1px solid var(--border);padding:1.25rem;overflow-y:auto;background:var(--bg)}
 #panel .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;margin-bottom:1rem}
 #panel .stat{text-align:center;padding:0.5rem;background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border)}
@@ -100,12 +129,16 @@ footer button:hover{background:rgba(20,20,19,0.04)}
 <div id="app">
   <header>
     <div class="logo">Scholar<span>Map</span></div>
-    <input id="search" type="text" placeholder="Search names, papers, abstracts...">
-    <div id="venue-chips" class="venue-chips"></div>
+    <input id="search" type="text" placeholder="Search authors, papers...">
+    <div class="venue-wrap">
+      <button id="venue-trigger" class="venue-trigger">Conferences <span id="venue-count" class="venue-count"></span> ▾</button>
+      <div id="venue-dropdown" class="venue-dropdown hidden"></div>
+    </div>
   </header>
   <div class="main">
     <div id="graph-container">
-      <div class="graph-hint" id="graph-hint">Click org to expand members · Click blank to collapse · Scroll to zoom</div>
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="graph-hint" id="graph-hint">Click org to expand · Click person to view · Click blank to go back · Scroll to zoom</div>
     </div>
     <div id="panel"><div class="empty-state">Loading graph data...</div></div>
   </div>
@@ -127,7 +160,15 @@ let activeVenues = new Set();
 let searchQuery = "";
 let orgThreshold = 3;
 let currentRankList = null; // "orgs" | "persons" | null
+// area grouping for venue chips: SE / Security / Systems (incl. Crypto)
+const AREAS = [
+  { name: "SE", venues: ["ICSE","FSE","ASE","ISSTA"] },
+  { name: "Security", venues: ["CCS","S&P","USENIX Security","NDSS","CRYPTO","EUROCRYPT","ASIACRYPT"] },
+  { name: "Systems", venues: ["OSDI","SOSP","ASPLOS","EuroSys","HPDC"] },
+];
+let expandedAreas = new Set(); // which areas show all venues (vs collapsed top-3)
 let panelHistory = []; // stack of {type, data} for back navigation
+let _skipAutoZoom = false; // flag to skip zoomToFitAll when caller handles zoom
 const COLORS = [
   "#4E79A7","#F28E2B","#E15759","#76B7B2","#59A14F",
   "#EDC948","#B07AA1","#FF9DA7","#9C755F","#BAB0AC",
@@ -144,30 +185,21 @@ function getRadius(d) {
   if (d.type === "org") return Math.max(10, Math.sqrt(d.metrics.paper_count) * 8);
   return Math.max(4, Math.sqrt(d.metrics.paper_count) * 5);
 }
-function getPersonOrgs(personName) {
-  // return all orgs this person belongs to (from org node members lists)
-  const orgs = [];
-  DATA.nodes.forEach(n => {
-    if (n.type === "org" && n.members && n.members.includes(personName) && n.name !== "Unknown") orgs.push(n.name);
-  });
-  // if no orgs found, fallback to primary
-  if (!orgs.length) {
-    const pNode = nodeMap["person:" + personName];
-    if (pNode && pNode.org && pNode.org !== "Unknown") orgs.push(pNode.org);
-  }
-  return orgs;
+function getPersonOrgs(personId) {
+  // return orgs for a specific person node (by ID, not name — avoids homonym collision).
+  // Using ID prevents "Yang Liu@NTU" from showing Xidian/ShanghaiTech orgs.
+  const pNode = nodeMap[personId];
+  if (!pNode) return [];
+  if (pNode.org && pNode.org !== "Unknown") return [pNode.org];
+  return [];
 }
 function getOrgMemberIds(orgName) {
-  // prefer org node's members list (includes dual/triple affiliation members from pipeline)
-  const orgNode = nodeMap["org:" + orgName];
-  if (orgNode && orgNode.members && orgNode.members.length > 0) {
-    return new Set(orgNode.members);
-  }
-  // fallback: scan paper authors + person nodes
-  const names = new Set();
-  DATA.papers.forEach(p => p.authors.forEach(a => { if (a.affiliation === orgName) names.add(a.name); }));
-  DATA.nodes.forEach(n => { if (n.type === "person" && n.org === orgName) names.add(n.name); });
-  return names;
+  // Return set of person node IDs (not names) belonging to this org.
+  // Uses node.org field for precise matching — avoids homonym collisions
+  // (e.g. "Zhenyu Chen@NTU" won't appear when expanding SJTU).
+  const ids = new Set();
+  DATA.nodes.forEach(n => { if (n.type === "person" && n.org === orgName) ids.add(n.id); });
+  return ids;
 }
 
 // === Load data ===
@@ -176,7 +208,10 @@ fetch("graph_data.json?t=" + Date.now())
   .then(data => {
     DATA = data;
     DATA.nodes.forEach(n => { nodeMap[n.id] = n; n._ox = null; n._oy = null; });
+    // build name→person node lookup (for paper author clicks)
+    DATA.nodes.filter(n => n.type === "person").forEach(n => { nodeMap["person:" + n.name] = n; });
     DATA.papers.forEach(p => paperMap[p.title] = p);
+    // Default: all venues active
     DATA.meta.venues_covered.forEach(v => activeVenues.add(v));
     // pre-compute org positions on a wide ring
     const container = document.getElementById("graph-container");
@@ -188,6 +223,7 @@ fetch("graph_data.json?t=" + Date.now())
       n._ox = W/2 + Math.cos(angle) * r;
       n._oy = H/2 + Math.sin(angle) * r;
     });
+    initVenueDropdown();
     renderVenueChips();
     initSVG();
     renderGraph();  // only renders visible nodes!
@@ -208,64 +244,138 @@ function computeFilteredStats() {
   DATA.nodes.filter(n => n.type === "org" && n.name !== "Unknown" && n.venues.some(v => activeVenues.has(v)))
     .forEach(n => { const c = n.papers.filter(t => paperMap[t] && activeVenues.has(paperMap[t].venue)).length; if (c > 0) orgCount[n.name] = c; });
   const allOrgs = Object.entries(orgCount).sort((a,b) => b[1]-a[1]);
-  const persCount = {};
+  // persons: return [id, name, count] so callers can use node ID for navigation
+  const persArr = [];
   DATA.nodes.filter(n => n.type === "person" && n.venues.some(v => activeVenues.has(v)))
-    .forEach(n => { const c = n.papers.filter(t => paperMap[t] && activeVenues.has(paperMap[t].venue)).length; if (c > 0) persCount[n.name] = c; });
-  const allPersons = Object.entries(persCount).sort((a,b) => b[1]-a[1]);
-  return { paper_count: papers.length, person_count: personSet.size, org_count: allOrgs.length, top_orgs: allOrgs, top_persons: allPersons };
+    .forEach(n => { const c = n.papers.filter(t => paperMap[t] && activeVenues.has(paperMap[t].venue)).length; if (c > 0) persArr.push([n.id, n.name, c]); });
+  persArr.sort((a,b) => b[2]-a[2]);
+  return { paper_count: papers.length, person_count: personSet.size, org_count: allOrgs.length, top_orgs: allOrgs, top_persons: persArr };
 }
 
-// === Venue chips ===
+// === Venue dropdown ===
 function venueLabel(v) { return v.replace(/\s*\d{2}(\d{2})$/, "'$1"); }
-function renderVenueChips() {
-  const el = document.getElementById("venue-chips");
-  // sort venues: year descending, then name ascending (e.g. ICSE 2026, FSE 2026, ASE 2025, ...)
-  const venues = [...DATA.meta.venues_covered].sort((a, b) => {
-    const ya = parseInt(a.match(/\d{4}/)?.[0]) || 0, yb = parseInt(b.match(/\d{4}/)?.[0]) || 0;
-    if (yb !== ya) return yb - ya;
-    return a.localeCompare(b);
+
+// toggle dropdown open/close
+function initVenueDropdown() {
+  const trigger = document.getElementById("venue-trigger");
+  const dropdown = document.getElementById("venue-dropdown");
+  // click trigger to toggle
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("hidden");
+  };
+  // click outside to close
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target) && e.target !== trigger) {
+      dropdown.classList.add("hidden");
+    }
   });
+  // prevent dropdown clicks from closing
+  dropdown.onclick = (e) => e.stopPropagation();
+}
+
+function renderVenueChips() {
   // count papers per venue
   const venueCounts = {};
   DATA.papers.forEach(p => { venueCounts[p.venue] = (venueCounts[p.venue] || 0) + 1; });
-  // "All" chip + individual venue chips
-  const allActive = venues.every(v => activeVenues.has(v));
-  el.innerHTML = (venues.length > 1 ? `<button class="chip${allActive ? ' active' : ''}" data-venue="__all__">All</button>` : '') +
-    venues.map(v =>
-      `<button class="chip${activeVenues.has(v) ? ' active' : ''}" data-venue="${v}">${venueLabel(v)} <span style="opacity:0.6">${venueCounts[v] || 0}</span></button>`
-    ).join("");
-  el.querySelectorAll(".chip").forEach(btn => {
+  const allVenues = [...DATA.meta.venues_covered];
+
+  // sort: year desc first, then conference name asc within same year
+  function sortVenues(list) {
+    return [...list].sort((a, b) => {
+      const ya = parseInt(a.match(/\d{4}/)?.[0]) || 0, yb = parseInt(b.match(/\d{4}/)?.[0]) || 0;
+      if (ya !== yb) return yb - ya;
+      return a.replace(/\s*\d{4}$/, "").localeCompare(b.replace(/\s*\d{4}$/, ""));
+    });
+  }
+
+  const allActive = allVenues.length > 0 && allVenues.every(v => activeVenues.has(v));
+
+  // update trigger button text: "Venues 21/21 ▾" or "Venues 5/21 ▾"
+  const countEl = document.getElementById("venue-count");
+  countEl.textContent = `${activeVenues.size}/${allVenues.length}`;
+
+  // build dropdown content
+  const dropdown = document.getElementById("venue-dropdown");
+  let html = `<div class="dropdown-top">`;
+  html += `<button class="btn${allActive ? ' active' : ''}" data-action="all">All</button>`;
+  // per-area quick select buttons
+  AREAS.forEach(area => {
+    const areaVenues = allVenues.filter(v => area.venues.some(av => v.replace(/\s*\d{4}$/, "") === av));
+    const areaActive = areaVenues.length > 0 && areaVenues.every(v => activeVenues.has(v));
+    html += `<button class="btn${areaActive ? ' active' : ''}" data-action="area" data-area-name="${area.name}">Only ${area.name}</button>`;
+  });
+  html += `</div>`;
+
+  // each area group with chips
+  AREAS.forEach(area => {
+    const areaVenues = sortVenues(allVenues.filter(v => {
+      const name = v.replace(/\s*\d{4}$/, "");
+      return area.venues.some(av => name === av);
+    }));
+    if (!areaVenues.length) return;
+
+    html += `<div class="area-group">`;
+    html += `<div class="area-header"><span class="area-label">${area.name}</span></div>`;
+    html += `<div class="area-chips">`;
+    areaVenues.forEach(v => {
+      html += `<button class="chip${activeVenues.has(v) ? ' active' : ''}" data-venue="${v}">${venueLabel(v)}<span class="cnt">${venueCounts[v] || 0}</span></button>`;
+    });
+    html += `</div></div>`;
+  });
+  dropdown.innerHTML = html;
+
+  // bind top action buttons (All / Only SE / Only Security / Only Systems)
+  dropdown.querySelectorAll(".dropdown-top .btn").forEach(btn => {
     btn.onclick = () => {
-      const v = btn.dataset.venue;
-      if (v === "__all__") {
-        // toggle all: if all active → deselect all but first; else → select all
+      const action = btn.dataset.action;
+      if (action === "all") {
         if (allActive) {
-          venues.forEach(vv => activeVenues.delete(vv));
-          activeVenues.add(venues[0]);
+          allVenues.forEach(v => activeVenues.delete(v));
+          activeVenues.add(allVenues[0]);
         } else {
-          venues.forEach(vv => activeVenues.add(vv));
+          allVenues.forEach(v => activeVenues.add(v));
         }
-      } else {
-        if (activeVenues.has(v)) {
-          // don't allow deselecting the last one
-          if (activeVenues.size <= 1) return;
-          activeVenues.delete(v);
-        } else {
-          activeVenues.add(v);
-        }
+      } else if (action === "area") {
+        // select only this area's venues
+        const areaName = btn.dataset.areaName;
+        const area = AREAS.find(a => a.name === areaName);
+        const areaVenues = allVenues.filter(v => area.venues.some(av => v.replace(/\s*\d{4}$/, "") === av));
+        allVenues.forEach(v => activeVenues.delete(v));
+        areaVenues.forEach(v => activeVenues.add(v));
       }
-      renderVenueChips();  // re-render chips to update active state
-      if (expandedOrg) {
-        const orgNode = nodeMap["org:" + expandedOrg];
-        if (!orgNode || !orgNode.venues.some(v2 => activeVenues.has(v2))) { expandedOrg = null; selectedPerson = null; }
-      }
-      renderGraph();
-      if (expandedOrg) renderPanel("org", nodeMap["org:" + expandedOrg]);
-      else if (selectedPerson) renderPanel("person", selectedPerson);
-      else if (currentRankList) showRankList(currentRankList, true);
-      else renderPanel("global");
+      onVenueChange();
     };
   });
+
+  // bind venue chip clicks
+  dropdown.querySelectorAll(".chip").forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.dataset.venue;
+      if (activeVenues.has(v)) {
+        if (activeVenues.size <= 1) return;
+        activeVenues.delete(v);
+      } else {
+        activeVenues.add(v);
+      }
+      onVenueChange();
+    };
+  });
+}
+
+// called after any venue selection change — update everything
+function onVenueChange() {
+  renderVenueChips();
+  if (expandedOrg) {
+    const orgNode = nodeMap["org:" + expandedOrg];
+    if (!orgNode || !orgNode.venues.some(v => activeVenues.has(v))) { expandedOrg = null; selectedPerson = null; }
+  }
+  renderGraph();
+  if (searchQuery) { applySearch(); }
+  else if (expandedOrg) renderPanel("org", nodeMap["org:" + expandedOrg]);
+  else if (selectedPerson) renderPanel("person", selectedPerson);
+  else if (currentRankList) showRankList(currentRankList, true);
+  else renderPanel("global");
 }
 
 // === SVG setup (once) ===
@@ -277,7 +387,7 @@ function initSVG() {
   svg.call(zoom);
   svg.append("rect").attr("width", W*3).attr("height", H*3)
     .attr("x", -W).attr("y", -H).attr("fill", "transparent")
-    .on("click", () => { if (expandedOrg || selectedPerson) collapseToOrg(); });
+    .on("click", () => goBack());
   gMain = svg.append("g");
   gLinks = gMain.append("g");
   gNodes = gMain.append("g");
@@ -312,8 +422,13 @@ function renderGraph() {
     });
   } else {
     // expanded: show members of the expanded org + external coauthors
-    const memberNames = getOrgMemberIds(expandedOrg);
-    const coreNodes = DATA.nodes.filter(n => n.type === "person" && memberNames.has(n.name) && venueOk(n));
+    const memberIds = getOrgMemberIds(expandedOrg);
+    let coreNodes = DATA.nodes.filter(n => n.type === "person" && memberIds.has(n.id) && venueOk(n));
+    // limit to top 50 members by paper count to keep graph readable
+    if (coreNodes.length > 50) {
+      coreNodes.sort((a, b) => venueFilteredCount(b) - venueFilteredCount(a));
+      coreNodes = coreNodes.slice(0, 50);
+    }
     const coreIds = new Set(coreNodes.map(n => n.id));
     // find external nodes with strong collaboration (≥2 joint papers)
     const extIds = new Set();
@@ -398,8 +513,9 @@ function renderGraph() {
   // apply search highlight if active
   if (searchQuery) applySearch();
 
-  // auto-fit after settling
-  setTimeout(() => zoomToFitAll(), 600);
+  // auto-fit after settling (skip when caller will handle zoom)
+  if (!_skipAutoZoom) setTimeout(() => zoomToFitAll(), 600);
+  _skipAutoZoom = false;
 }
 
 // === Node click ===
@@ -422,39 +538,38 @@ function expandOrg(orgName, skipPanel) {
   expandedOrg = orgName;
   selectedPerson = null;
   // position core members on inner ring, external on outer ring
-  const memberNames = getOrgMemberIds(orgName);
+  const memberIds = getOrgMemberIds(orgName);
   const cx = orgNode?.x ?? orgNode?._ox ?? 400, cy = orgNode?.y ?? orgNode?._oy ?? 300;
+  // sort members by paper count, limit to top 50 for layout
+  const venueOk2 = n => n.venues.some(v => activeVenues.has(v));
+  let coreMembers = DATA.nodes.filter(n => n.type === "person" && memberIds.has(n.id) && venueOk2(n));
+  coreMembers.sort((a, b) => venueFilteredCount(b) - venueFilteredCount(a));
+  if (coreMembers.length > 50) coreMembers = coreMembers.slice(0, 50);
+  const coreMemberIds = new Set(coreMembers.map(n => n.id));
+  const coreCount = coreMembers.length;
+  const innerR = 50 + Math.sqrt(coreCount) * 20;
   let i = 0;
-  const coreCount = DATA.nodes.filter(n => n.type === "person" && memberNames.has(n.name)).length;
-  const innerR = 50 + coreCount * 3;
-  DATA.nodes.forEach(n => {
-    if (n.type === "person" && memberNames.has(n.name)) {
-      const angle = (2 * Math.PI * i) / Math.max(coreCount, 1);
-      n.x = cx + Math.cos(angle) * innerR;
-      n.y = cy + Math.sin(angle) * innerR;
-      n.vx = 0; n.vy = 0;
-      n._external = false;
-      i++;
-    }
+  coreMembers.forEach(n => {
+    const angle = (2 * Math.PI * i) / Math.max(coreCount, 1);
+    n.x = cx + Math.cos(angle) * innerR;
+    n.y = cy + Math.sin(angle) * innerR;
+    n.vx = 0; n.vy = 0;
+    n._external = false;
+    i++;
   });
   // position external collaborators on outer ring
   const outerR = innerR + 80;
   let j = 0;
   const extCandidates = [];
-  const coreIds = new Set(DATA.nodes.filter(n => n.type === "person" && memberNames.has(n.name)).map(n => n.id));
   DATA.edges.forEach(e => {
     if (e.type !== "coauthor" || e.weight < 2) return;
-    if (coreIds.has("person:" + e.source?.replace?.("person:","")) || coreIds.has(e.source)) {
-      extCandidates.push(e.target);
-    }
-    if (coreIds.has("person:" + e.target?.replace?.("person:","")) || coreIds.has(e.target)) {
-      extCandidates.push(e.source);
-    }
+    if (coreMemberIds.has(e.source) && !coreMemberIds.has(e.target)) extCandidates.push(e.target);
+    if (coreMemberIds.has(e.target) && !coreMemberIds.has(e.source)) extCandidates.push(e.source);
   });
-  const extIdSet = new Set(extCandidates.filter(id => !coreIds.has(id)));
+  const extIdSet = new Set(extCandidates);
   const extCount = extIdSet.size || 1;
   DATA.nodes.forEach(n => {
-    if (n.type === "person" && !memberNames.has(n.name)) {
+    if (n.type === "person" && !coreMemberIds.has(n.id)) {
       n._external = true;
       if (extIdSet.has(n.id)) {
         const angle = (2 * Math.PI * j) / extCount;
@@ -481,6 +596,73 @@ function collapseToOrg() {
   renderPanel("global");
 }
 
+// Progressive back: blank-click goes up ONE level instead of nuking everything
+function goBack() {
+  // Level 3: person selected inside org → go back to org view
+  if (selectedPerson && expandedOrg) {
+    selectedPerson = null;
+    clearHighlights();
+    renderPanel("org", nodeMap["org:" + expandedOrg]);
+    return;
+  }
+  // Level 2: person selected (no org expanded) → go back to overview
+  if (selectedPerson && !expandedOrg) {
+    selectedPerson = null;
+    clearHighlights();
+    renderGraph();
+    renderPanel("global");
+    return;
+  }
+  // Level 2: org expanded → collapse to org-level overview
+  if (expandedOrg) {
+    expandedOrg = null;
+    selectedPerson = null;
+    clearHighlights();
+    renderGraph();
+    renderPanel("global");
+    return;
+  }
+  // Level 1: rank list open → go back to overview
+  if (currentRankList) {
+    currentRankList = null;
+    panelHistory = [];
+    renderPanel("global");
+    return;
+  }
+  // Level 0: search active → clear search
+  if (searchQuery) {
+    searchQuery = "";
+    document.getElementById("search").value = "";
+    clearHighlights();
+    renderPanel("global");
+    return;
+  }
+  updateBreadcrumb();
+}
+
+
+// === Breadcrumb ===
+function updateBreadcrumb() {
+  const el = document.getElementById("breadcrumb");
+  if (!el) return;
+  const parts = [];
+  // Root: clickable home
+  parts.push(`<span onclick="collapseToOrg()">Overview</span>`);
+  if (expandedOrg) {
+    parts.push(`<span class="sep">›</span>`);
+    if (selectedPerson) {
+      parts.push(`<span onclick="goBack()">${esc(expandedOrg)}</span>`);
+      parts.push(`<span class="sep">›</span>`);
+      parts.push(`<span class="current">${esc(selectedPerson.name)}</span>`);
+    } else {
+      parts.push(`<span class="current">${esc(expandedOrg)}</span>`);
+    }
+  } else if (selectedPerson) {
+    parts.push(`<span class="sep">›</span>`);
+    parts.push(`<span class="current">${esc(selectedPerson.name.replace(/\s*\[(SE|Security|Systems)\]$/, ""))}</span>`);
+  }
+  el.innerHTML = parts.join("");
+}
 
 // === Zoom helpers ===
 function zoomToFitAll() {
@@ -549,6 +731,7 @@ function highlightPerson(d) {
 // === Search ===
 document.getElementById("search").addEventListener("input", debounce(e => {
   searchQuery = e.target.value.trim().toLowerCase();
+  resetSearchExpand(); // reset "show all" when query changes
   if (!DATA || !svg) return;
   if (!searchQuery) {
     clearHighlights();
@@ -563,15 +746,19 @@ function applySearch() {
   if (!gNodes || !searchQuery) return;
   const q = searchQuery;
 
-  // search ALL nodes (not just visible ones) for results panel
+  // Only search within active venues (scoped to current area)
+  const venueOk = n => n.venues.some(v => activeVenues.has(v));
   const matchedPersons = [];
   const matchedOrgs = new Set();
   const matchedPapers = [];
 
   DATA.nodes.forEach(d => {
+    if (!venueOk(d)) return;  // skip nodes outside current area
     const nameMatch = d.name.toLowerCase().includes(q);
-    const paperMatch = d.papers.some(t => t.toLowerCase().includes(q));
-    const absMatch = d.papers.some(t => (paperMap[t]?.abstract || "").toLowerCase().includes(q));
+    // only check papers within active venues
+    const activePapers = d.papers.filter(t => { const p = paperMap[t]; return p && activeVenues.has(p.venue); });
+    const paperMatch = activePapers.some(t => t.toLowerCase().includes(q));
+    const absMatch = activePapers.some(t => (paperMap[t]?.abstract || "").toLowerCase().includes(q));
     if (nameMatch || paperMatch || absMatch) {
       if (d.type === "person") {
         matchedPersons.push(d);
@@ -581,14 +768,72 @@ function applySearch() {
       }
     }
   });
+  // Merge same-name person nodes that represent the same real person.
+  // Two nodes merge when: (a) exact same org, OR (b) one org is a prefix/subset of the other
+  // (e.g. "Tsinghua University" vs "Tsinghua University; Zhongguancun Laboratory").
+  // Different real orgs stay separate (e.g. Yang Liu@NTU vs Yang Liu@Xidian).
+  // Org alias map: abbreviation → canonical full name (lowercase)
+  const ORG_ALIASES = [
+    [/\b(hkust|hong kong university of science and technology)\b/i, "hkust"],
+    [/\b(ntu|nanyang technological university)\b/i, "ntu"],
+    [/\b(nus|national university of singapore)\b/i, "nus"],
+    [/\b(penn state|pennsylvania state)\b/i, "penn state"],
+    [/\b(cmu|carnegie mellon)\b/i, "cmu"],
+    [/\b(mit|massachusetts institute of technology)\b/i, "mit"],
+    [/\b(eth zurich|eth zürich|eth z)/i, "eth zurich"],
+    [/\b(sustech|southern university of science and technology)\b/i, "sustech"],
+    [/\b(mpi-sp|max planck institute for security)\b/i, "mpi-sp"],
+    [/\b(cispa|helmholtz center for information security)\b/i, "cispa"],
+    [/\binstitute of information engineering\b/i, "iie-cas"],
+    [/\binstitute of computing technology\b/i, "ict-cas"],
+    [/\binstitute of software.{0,30}chinese academy/i, "iscas"],
+  ];
+  function orgCanon(o) {
+    if (!o) return "";
+    // strip trailing lab/dept qualifiers, take first segment
+    const s = o.replace(/[,;]\s*/g, "\0").split("\0")[0].trim().toLowerCase();
+    for (const [re, canon] of ORG_ALIASES) { if (re.test(o)) return canon; }
+    return s;
+  }
+  function orgSame(a, b) {
+    if (!a || !b) return a === b;
+    const ca = orgCanon(a), cb = orgCanon(b);
+    return ca === cb || ca.startsWith(cb) || cb.startsWith(ca);
+  }
+  const personGroups = []; // [{id, name, org, totalPapers, bestPapers, nodes[], exactMatch}]
+  matchedPersons.forEach(p => {
+    const pc = p.papers.filter(t => { const pp = paperMap[t]; return pp && activeVenues.has(pp.venue); }).length;
+    const exact = p.name.toLowerCase() === q;
+    // try to find existing group with same name + compatible org
+    let found = null;
+    for (const g of personGroups) {
+      if (g.name === p.name && orgSame(g.org, p.org || "")) { found = g; break; }
+    }
+    if (!found) {
+      personGroups.push({ id: p.id, name: p.name, org: p.org || "", totalPapers: pc, bestPapers: pc, nodes: [p], exactMatch: exact });
+    } else {
+      found.totalPapers += pc;
+      found.nodes.push(p);
+      if (exact) found.exactMatch = true;
+      if (pc > found.bestPapers) { found.bestPapers = pc; found.id = p.id; }
+      // keep the shorter (cleaner) org name
+      if (p.org && found.org && p.org.length < found.org.length) found.org = p.org;
+    }
+  });
+  // Sort: exact name match first, then by paper count
+  const mergedPersons = personGroups.sort((a, b) => {
+    if (a.exactMatch !== b.exactMatch) return a.exactMatch ? -1 : 1;
+    return b.totalPapers - a.totalPapers;
+  });
+
   DATA.papers.forEach(p => {
+    if (!activeVenues.has(p.venue)) return;  // skip papers outside current area
     if (p.title.toLowerCase().includes(q) || (p.abstract || "").toLowerCase().includes(q)) {
       matchedPapers.push(p);
     }
   });
 
   // highlight visible nodes: glow matched, dim unmatched
-  // in org-level: glow orgs that have matched members or matched directly
   gNodes.selectAll(".node-group").each(function(d) {
     let match = false;
     if (d.type === "org") {
@@ -603,40 +848,83 @@ function applySearch() {
   // render search results in panel
   const el = document.getElementById("panel");
   el.scrollTop = 0;
-  const maxShow = 20;
-  el.innerHTML = `
-    <h2>Search: "${esc(searchQuery)}"</h2>
-    ${matchedPersons.length ? `<div class="section-label">Authors (${matchedPersons.length})</div>` +
-      matchedPersons.slice(0, maxShow).map(p =>
-        `<div class="list-item" onclick="onPersonClick('${jsEsc(p.id)}')">${esc(p.name)} <span class="count">${esc(p.org)}</span></div>`
-      ).join("") + (matchedPersons.length > maxShow ? `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.3rem 0.5rem">+${matchedPersons.length - maxShow} more</div>` : '') : ''}
-    ${matchedPapers.length ? `<div class="section-label">Papers (${matchedPapers.length})</div>` +
-      matchedPapers.slice(0, maxShow).map(p =>
-        `<div class="paper-item"><div class="paper-title" style="cursor:default"><span class="venue-tag">${esc(venueLabel(p.venue))}</span><span style="flex:1">${esc(p.title)}</span></div></div>`
-      ).join("") + (matchedPapers.length > maxShow ? `<div style="font-size:0.75rem;color:var(--text-muted);padding:0.3rem 0.5rem">+${matchedPapers.length - maxShow} more</div>` : '') : ''}
-    ${!matchedPersons.length && !matchedPapers.length ? '<div class="empty-state">No results found</div>' : ''}
-  `;
+  const defaultShow = 20;
+  // track how many to show (expandable)
+  if (!applySearch._showAllAuthors) applySearch._showAllAuthors = false;
+  if (!applySearch._showAllPapers) applySearch._showAllPapers = false;
+  const authLimit = applySearch._showAllAuthors ? mergedPersons.length : defaultShow;
+  const paperLimit = applySearch._showAllPapers ? matchedPapers.length : defaultShow;
+
+  let html = `<h2>Search: "${esc(searchQuery)}"</h2>`;
+
+  // authors section (merged same-name+same-org nodes)
+  if (mergedPersons.length) {
+    html += `<div class="section-label">Authors (${mergedPersons.length})</div>`;
+    html += mergedPersons.slice(0, authLimit).map(g => {
+      return `<div class="list-item" onclick="onPersonClick('${jsEsc(g.id)}')">${esc(g.name)} <span class="count">${g.totalPapers}p · ${esc(g.org)}</span></div>`;
+    }).join("");
+    if (mergedPersons.length > defaultShow && !applySearch._showAllAuthors) {
+      html += `<div class="list-item" style="color:var(--accent);font-size:0.8rem;justify-content:center" id="show-all-authors">Show all ${mergedPersons.length} authors ▾</div>`;
+    }
+  }
+
+  // papers section — use renderPaperItem for expandable abstracts
+  if (matchedPapers.length) {
+    html += `<div class="section-label">Papers (${matchedPapers.length})</div>`;
+    html += matchedPapers.slice(0, paperLimit).map(p => renderPaperItem(p, "")).join("");
+    if (matchedPapers.length > defaultShow && !applySearch._showAllPapers) {
+      html += `<div class="list-item" style="color:var(--accent);font-size:0.8rem;justify-content:center" id="show-all-papers">Show all ${matchedPapers.length} papers ▾</div>`;
+    }
+  }
+
+  if (!matchedPersons.length && !matchedPapers.length) {
+    html += '<div class="empty-state">No results found</div>';
+  }
+
+  el.innerHTML = html;
+  bindPaperToggles(); // enable paper abstract expand/collapse
+
+  // bind "show all" buttons
+  document.getElementById("show-all-authors")?.addEventListener("click", () => {
+    applySearch._showAllAuthors = true;
+    applySearch();
+  });
+  document.getElementById("show-all-papers")?.addEventListener("click", () => {
+    applySearch._showAllPapers = true;
+    applySearch();
+  });
+}
+// reset expand state when search query changes
+function resetSearchExpand() {
+  applySearch._showAllAuthors = false;
+  applySearch._showAllPapers = false;
 }
 
 // === Navigation from panel ===
 function panelNav() {
-  const showHome = panelHistory.length > 1;
+  // Always show Back (progressive) + Overview (jump to root) when not at root
+  const showHome = expandedOrg || selectedPerson || currentRankList;
   return `<div class="panel-nav"><span class="back-btn" onclick="panelBack()">← Back</span>${showHome ? '<span class="home-btn" onclick="collapseToOrg()">Overview</span>' : ''}</div>`;
 }
 function pushPanel() {
   panelHistory.push({ expandedOrg, selectedPerson, currentRankList });
 }
 function panelBack() {
-  if (!panelHistory.length) { collapseToOrg(); return; }
-  const prev = panelHistory.pop();
-  expandedOrg = prev.expandedOrg;
-  selectedPerson = prev.selectedPerson;
-  currentRankList = prev.currentRankList;
-  clearHighlights();
-  if (currentRankList) { renderGraph(); showRankList(currentRankList, true); }
-  else if (selectedPerson) { highlightPerson(selectedPerson); renderGraph(); renderPanel("person", selectedPerson); }
-  else if (expandedOrg) { renderGraph(); renderPanel("org", nodeMap["org:" + expandedOrg]); }
-  else { renderGraph(); renderPanel("global"); }
+  // Try history stack first for complex navigation chains (search → person → coauthor)
+  if (panelHistory.length) {
+    const prev = panelHistory.pop();
+    expandedOrg = prev.expandedOrg;
+    selectedPerson = prev.selectedPerson;
+    currentRankList = prev.currentRankList;
+    clearHighlights();
+    if (currentRankList) { renderGraph(); showRankList(currentRankList, true); }
+    else if (selectedPerson) { highlightPerson(selectedPerson); renderGraph(); renderPanel("person", selectedPerson); }
+    else if (expandedOrg) { renderGraph(); renderPanel("org", nodeMap["org:" + expandedOrg]); }
+    else { renderGraph(); renderPanel("global"); }
+    return;
+  }
+  // No history — use progressive back (same as blank click)
+  goBack();
 }
 
 function onPersonClick(id) {
@@ -647,17 +935,22 @@ function onPersonClick(id) {
   let alreadyVisible = false;
   if (expandedOrg !== null) {
     const members = getOrgMemberIds(expandedOrg);
-    alreadyVisible = members.has(d.name);
+    alreadyVisible = members.has(d.id);
   }
   if (!alreadyVisible) {
-    // need to expand this person's org first
+    // expand this person's org first, then locate after simulation settles
     const targetOrg = d.org || "";
+    _skipAutoZoom = true;
     if (targetOrg) expandOrg(targetOrg, true);
+    selectedPerson = d;
+    renderPanel("person", d);
+    setTimeout(() => { highlightPerson(d); zoomToNode(d); }, 600);
+  } else {
+    selectedPerson = d;
+    highlightPerson(d);
+    renderPanel("person", d);
+    zoomToNode(d);
   }
-  selectedPerson = d;
-  highlightPerson(d);
-  renderPanel("person", d);
-  setTimeout(() => zoomToNode(d), 300);
 }
 
 function showRankList(type, isBack) {
@@ -671,8 +964,10 @@ function showRankList(type, isBack) {
   el.innerHTML = `
     ${panelNav()}
     <h2>${title} <span class="count" style="font-size:0.85rem;font-weight:400">${list.length}</span></h2>
-    <div class="rank-list">${list.map(([name, c], i) =>
-      `<div class="list-item" onclick="jumpToNode('${isOrgs ? "org" : "person"}:${jsEsc(name)}')"><span class="rank-num">${i+1}.</span> ${esc(name)} <span class="count">${c}p</span></div>`
+    <div class="rank-list">${isOrgs ? list.map(([name, c], i) =>
+      `<div class="list-item" onclick="jumpToNode('org:${jsEsc(name)}')"><span class="rank-num">${i+1}.</span> ${esc(name)} <span class="count">${c}p</span></div>`
+    ).join("") : list.map(([id, name, c], i) =>
+      `<div class="list-item" onclick="jumpToNode('${jsEsc(id)}')"><span class="rank-num">${i+1}.</span> ${esc(name)} <span class="count">${c}p</span></div>`
     ).join("")}</div>
   `;
 }
@@ -698,9 +993,10 @@ function venueFilteredCount(d) {
 }
 function showTooltip(e, d) {
   const pc = venueFilteredCount(d);
+  const cleanName = d.name.replace(/\s*\[(SE|Security|Systems)\]$/, "");
   const text = d.type === "org"
-    ? `${d.name} — ${pc} papers`
-    : `${d.name} — ${d.org} (${pc} papers)`;
+    ? `${cleanName} — ${pc} papers`
+    : `${cleanName} — ${d.org} (${pc} papers)`;
   tooltipEl.textContent = text;
   tooltipEl.style.left = (e.clientX + 14) + "px";
   tooltipEl.style.top = (e.clientY - 12) + "px";
@@ -717,16 +1013,17 @@ function dragEnd(e, d) { if (!e.active) simulation.alphaTarget(0); d.fx = null; 
 function renderPanel(mode, data) {
   const el = document.getElementById("panel");
   el.scrollTop = 0;
+  updateBreadcrumb();
 
   if (mode === "global") {
     const m = computeFilteredStats();
-    const scopeText = [...activeVenues].join(", ") || "None";
+    const areaLabel = "Overview";
     const venueOk = n => n.venues.some(v => activeVenues.has(v));
     const visibleCount = DATA.nodes.filter(n => n.type === "org" && n.name !== "Unknown" && venueOk(n) && venueFilteredCount(n) >= orgThreshold).length;
     const totalOrgCount = m.org_count;
     el.innerHTML = `
-      <h2>Overview</h2>
-      <div class="filter-scope">Scope: ${esc(scopeText)} · Graph: ${visibleCount}/${totalOrgCount} orgs
+      <h2>${esc(areaLabel)} Overview</h2>
+      <div class="filter-scope">${[...activeVenues].map(v => venueLabel(v)).join(", ")} · ${visibleCount}/${totalOrgCount} orgs
         <span style="margin-left:0.4rem">≥ <input type="number" id="threshold-input" value="${orgThreshold}" min="1" max="50" style="width:3rem;padding:0.15rem 0.3rem;border:1px solid var(--border-strong);border-radius:var(--radius);font-family:var(--mono);font-size:0.75rem;text-align:center;background:var(--bg-card)"> papers</span>
       </div>
       <div class="stat-grid">
@@ -737,17 +1034,17 @@ function renderPanel(mode, data) {
       <div class="section-label">Top Organizations</div>
       ${m.top_orgs.length ? m.top_orgs.slice(0,10).map(([o, c]) => `<div class="list-item" onclick="jumpToNode('org:${jsEsc(o)}')">${esc(o)} <span class="count">${c}p</span></div>`).join("") : '<div class="empty-state">No data</div>'}
       <div class="section-label">Top Researchers</div>
-      ${m.top_persons.length ? m.top_persons.slice(0,10).map(([p, c]) => `<div class="list-item" onclick="jumpToNode('person:${jsEsc(p)}')">${esc(p)} <span class="count">${c}p</span></div>`).join("") : '<div class="empty-state">No data</div>'}
+      ${m.top_persons.length ? m.top_persons.slice(0,10).map(([id, name, c]) => `<div class="list-item" onclick="jumpToNode('${jsEsc(id)}')">${esc(name)} <span class="count">${c}p</span></div>`).join("") : '<div class="empty-state">No data</div>'}
     `;
     const thInput = document.getElementById("threshold-input");
     if (thInput) thInput.onchange = () => setThreshold(thInput.value);
   } else if (mode === "org" && data) {
-    const memberSet = data.members ? new Set(data.members) : getOrgMemberIds(data.name);
+    const memberIdSet = getOrgMemberIds(data.name);
     // venue-aware: only count papers matching active venues
     const venueFilter = t => { const p = paperMap[t]; return p && activeVenues.has(p.venue); };
     const orgPapers = data.papers.filter(venueFilter);
     const orgPaperSet = new Set(orgPapers);
-    const members = DATA.nodes.filter(n => n.type === "person" && memberSet.has(n.name))
+    const members = DATA.nodes.filter(n => n.type === "person" && memberIdSet.has(n.id))
       .map(m => ({ ...m, _orgCount: m.papers.filter(t => orgPaperSet.has(t)).length }))
       .filter(m => m._orgCount > 0)
       .sort((a, b) => b._orgCount - a._orgCount || b.metrics.paper_count - a.metrics.paper_count);
@@ -790,7 +1087,7 @@ function renderPanel(mode, data) {
     el.innerHTML = `
       ${panelNav()}
       <h3>${esc(data.name)}</h3>
-      <div style="margin:0.4rem 0">${getPersonOrgs(data.name).map(o => '<span class="tag tag-accent' + (o === data.org ? '' : ' tag-secondary') + '" onclick="jumpToNode(\'org:' + jsEsc(o) + '\')" style="cursor:pointer">' + esc(o) + '</span>').join(" ")}</div>
+      <div style="margin:0.4rem 0">${getPersonOrgs(data.id).map(o => '<span class="tag tag-accent' + (o === data.org ? '' : ' tag-secondary') + '" onclick="jumpToNode(\'org:' + jsEsc(o) + '\')" style="cursor:pointer">' + esc(o) + '</span>').join(" ")}</div>
       <p style="margin:0.5rem 0;font-size:0.82rem;color:var(--text-secondary);line-height:1.5">${esc(data.summary)}</p>
       <div class="section-label">Papers (${visPapers.length})</div>
       ${sortPapers(visPapers).map(t => renderPaperItem(t, data.name)).join("")}
@@ -802,12 +1099,17 @@ function renderPanel(mode, data) {
 }
 
 function sortPapers(papers) {
-  // sort by venue (alphabetical), then title (alphabetical)
+  // sort by year (descending), then conference name (alphabetical), then title (alphabetical)
   return [...papers].sort((a, b) => {
     const pa = paperMap[a], pb = paperMap[b];
     if (!pa || !pb) return 0;
-    const va = pa.venue || "", vb = pb.venue || "";
-    if (va !== vb) return va.localeCompare(vb);
+    // year descending
+    const ya = pa.year || 0, yb = pb.year || 0;
+    if (ya !== yb) return yb - ya;
+    // conference name (strip year): "ICSE 2025" → "ICSE"
+    const ca = (pa.venue || "").replace(/\s*\d{4}$/, ""), cb = (pb.venue || "").replace(/\s*\d{4}$/, "");
+    if (ca !== cb) return ca.localeCompare(cb);
+    // title alphabetical
     return a.localeCompare(b);
   });
 }
@@ -824,11 +1126,15 @@ function renderPaperItem(title, personName) {
   }
   // venue tag: "FSE 2026" → "FSE'26"
   const venueTag = p.venue ? `<span class="venue-tag">${esc(p.venue.replace(/\s*\d{2}(\d{2})$/, "'$1"))}</span>` : '';
-  // clickable author list
+  // clickable author list — use orcid/dblp_pid for precise node lookup, fallback name@aff
   const authorHtml = p.authors.map(a => {
-    const pid = "person:" + a.name;
-    return nodeMap[pid]
-      ? `<span class="paper-author" onclick="onPersonClick('${jsEsc(pid)}')">${esc(a.name)}</span>`
+    let node = null;
+    if (a.orcid) node = nodeMap["person:orcid:" + a.orcid];
+    if (!node && a.dblp_pid) node = nodeMap["person:dblp:" + a.dblp_pid];
+    if (!node && a.affiliation) node = nodeMap["person:" + a.name + "@" + a.affiliation];
+    if (!node) node = nodeMap["person:" + a.name];
+    return node
+      ? `<span class="paper-author" onclick="onPersonClick('${jsEsc(node.id)}')">${esc(a.name)}</span>`
       : `<span class="paper-author-plain">${esc(a.name)}</span>`;
   }).join(", ");
   return `<div class="paper-item">
@@ -851,10 +1157,31 @@ function bindPaperToggles() {
   });
 }
 
+// === Keyboard shortcuts ===
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    // If search input is focused and has text, clear it first
+    const searchEl = document.getElementById("search");
+    if (document.activeElement === searchEl && searchEl.value) {
+      searchEl.value = "";
+      searchQuery = "";
+      clearHighlights();
+      if (expandedOrg) renderPanel("org", nodeMap["org:" + expandedOrg]);
+      else renderPanel("global");
+      searchEl.blur();
+      return;
+    }
+    // Otherwise progressive back
+    searchEl.blur();
+    goBack();
+  }
+});
+
 // === Footer ===
 function updateFooter() {
+  const s = DATA.meta.total_stats;
   document.getElementById("footer-info").textContent =
-    `Source: ${DATA.meta.venues_covered.join(", ")} · Updated: ${DATA.meta.last_updated.split("T")[0]} · ${DATA.meta.total_stats.paper_count} papers`;
+    `${DATA.meta.venues_covered.length} venues · ${s.paper_count} papers · ${s.person_count} authors · ${s.org_count} orgs · Updated ${DATA.meta.last_updated.split("T")[0]}`;
 }
 
 </script>
