@@ -4,7 +4,7 @@
 
 **Interactive Visualization of Academic Collaboration Networks**
 
-Explore co-authorship patterns across top academic venues
+Explore co-authorship patterns across top CS conferences
 
 [![GitHub Stars](https://img.shields.io/github/stars/floritange/ScholarMap?style=flat-square&color=DAA520)](https://github.com/floritange/ScholarMap/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/floritange/ScholarMap?style=flat-square)](https://github.com/floritange/ScholarMap/network)
@@ -21,30 +21,31 @@ Try it now: **[https://floritange.github.io/ScholarMap/](https://floritange.gith
 
 ## ⚡ Overview
 
-**ScholarMap** collects accepted papers from top conferences, extracts authors and affiliations, and builds a **force-directed graph** you can explore in your browser — see who collaborates with whom, which institutions are most active, and how communities connect across venues.
+**ScholarMap** collects accepted papers from top CS conferences, extracts authors and affiliations, and builds a **force-directed graph** you can explore in your browser — see who collaborates with whom, which institutions are most active, and how communities connect across venues.
 
 ## 📊 Current Coverage
 
-| Venue | Year | Papers |
-|-------|------|--------|
-| **ICSE** | 2025, 2026 | ~400 |
-| **FSE** | 2025, 2026 | ~350 |
-| **ASE** | 2025 | ~300 |
-| **ISSTA** | 2025 | ~130 |
-| **Total** | | **1,266 papers, 4,130 authors, 860 orgs** |
+| Area | Venues | Years |
+|------|--------|-------|
+| **SE** | ICSE, FSE, ASE, ISSTA | 2025 – 2026 |
+| **Security** | CCS, S&P, USENIX Security, NDSS | 2025 – 2026 |
+| **Crypto** | CRYPTO, EUROCRYPT, ASIACRYPT | 2025 |
+| **Systems** | OSDI, SOSP, ASPLOS, EuroSys, HPDC | 2025 – 2026 |
 
 ## ✨ Features
 
-1. **Graph View**: Force-directed layout; click an org to expand its members
-2. **Venue Filter**: Toggle conferences on/off to compare communities
-3. **Search**: Find any author or institution instantly
-4. **Stats Panel**: Top orgs & authors rankings, updated in real time
-5. **Paper Detail**: Title, authors (first/last author tags), abstract, arXiv link
+- **Graph View** — Force-directed layout of institutions; click any org node to expand and see its members and their co-authorship edges
+- **Area-based Conference Filter** — Conferences grouped by area (SE / Security / Systems); toggle individual venues or entire areas to compare communities
+- **Smart Search** — Search by author name, institution, or paper keyword; exact name matches rank first; same-person variants across affiliations are merged while true homonyms stay separated
+- **Stats Panel** — Global and per-org rankings for institutions and authors, updated in real time as you filter venues
+- **Paper Detail** — Expandable paper list with first/last author tags, venue badges, clickable author names, and arXiv links
+- **Person Focus** — Click any author from search results to navigate directly to their org graph, even for authors with few publications
+- **Breadcrumb Navigation** — Progressive drill-down (Overview → Org → Person) with back button and keyboard shortcuts (Escape)
 
 ## 📌 TODO
 
-1. More years of SE conferences (ICSE 2024, FSE 2024, ...)
-2. Conferences beyond SE (e.g., AI, Systems, Security, ...)
+- More years of conferences (2024 and earlier)
+- More areas (AI, HCI, Networking, ...)
 
 ## 📈 Star History
 
